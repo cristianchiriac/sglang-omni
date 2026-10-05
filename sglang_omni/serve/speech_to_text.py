@@ -337,7 +337,13 @@ def av_duration(audio_bytes: bytes) -> float:
     try:
         import av
 
-        with av.open(io.BytesIO(audio_bytes), metadata_errors="ignore") as container:
+        # note (cristianchiriac): PyAV 19 removed metadata_errors from av.open.
+        open_kwargs = (
+            {"metadata_errors": "ignore"}
+            if int(av.__version__.split(".")[0]) < 19
+            else {}
+        )
+        with av.open(io.BytesIO(audio_bytes), **open_kwargs) as container:
             if container.duration:  # in av.time_base units (microseconds)
                 return max(container.duration / 1_000_000, 0.0)
             else:

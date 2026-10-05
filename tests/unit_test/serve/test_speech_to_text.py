@@ -124,6 +124,17 @@ def test_probe_measures_wav_without_the_av_fallback(monkeypatch) -> None:
     assert speech_to_text.probe_audio_duration(buffer.getvalue()) == pytest.approx(0.5)
 
 
+def test_av_duration_measures_a_container() -> None:
+    buffer = io.BytesIO()
+    with wave.open(buffer, "wb") as writer:
+        writer.setnchannels(1)
+        writer.setsampwidth(2)
+        writer.setframerate(16000)
+        writer.writeframes(b"\x00\x00" * 8000)
+
+    assert speech_to_text.av_duration(buffer.getvalue()) == pytest.approx(0.5)
+
+
 @pytest.mark.parametrize(
     "header",
     [
