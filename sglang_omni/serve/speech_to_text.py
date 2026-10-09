@@ -299,11 +299,6 @@ _EXACT_LENGTH_SUBTYPES = frozenset(
 # FLAC streamed with STREAMINFO total_samples 0.
 _UNKNOWN_LENGTH_FRAMES = 2**63 - 1
 
-# note (cristianchiriac): PyAV 19 removed metadata_errors from av.open.
-AV_OPEN_METADATA_ARGUMENTS: dict[str, str] = (
-    {"metadata_errors": "ignore"} if int(av.__version__.split(".")[0]) < 19 else {}
-)
-
 
 def looks_like_wav_or_flac(audio_bytes: bytes) -> bool:
     # Cheap prefilter so only the two formats the fast path serves are ever
@@ -338,9 +333,13 @@ def soundfile_duration(audio_bytes: bytes) -> float:
 
 def av_duration(audio_bytes: bytes) -> float:
     try:
-        with av.open(
-            io.BytesIO(audio_bytes), **AV_OPEN_METADATA_ARGUMENTS
-        ) as container:
+        # note (cristianchiriac): PyAV 19 removed metadata_errors from av.open.
+        open_kwargs = (
+            {"metadata_errors": "ignore"}
+            if int(av.__version__.split(".")[0]) < 19
+            else {}
+        )
+        with av.open(io.BytesIO(audio_bytes), **open_kwargs) as container:
             if container.duration:  # in av.time_base units (microseconds)
                 return max(container.duration / 1_000_000, 0.0)
             else:
